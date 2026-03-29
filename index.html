@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="社労士ドリル">
+<meta name="theme-color" content="#0F6E56">
+<title>社労士一発合格ドリル</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#fff;color:#1a1a1a;min-height:100vh}
+#app{max-width:480px;margin:0 auto;padding-bottom:80px;min-height:100vh}
+.hidden{display:none!important}
+.btn{display:block;width:calc(100% - 32px);margin:8px 16px;padding:15px;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;text-align:center;font-family:inherit;transition:opacity .15s}
+.btn:active{opacity:.75}
+.btn-primary{background:#0F6E56;color:#fff}
+.btn-ghost{background:transparent;color:#888;border:1px solid #ddd}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.card{background:#fafafa;border-radius:14px;padding:16px;margin:10px 16px;border:1px solid #e8e8e4}
+.tag{display:inline-flex;align-items:center;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600}
+.header{padding:20px 16px 0;display:flex;justify-content:space-between;align-items:flex-start}
+.progress-bar{height:10px;background:#e8e8e4;border-radius:5px;overflow:hidden}
+.sec{font-size:13px;font-weight:600;color:#888;margin-bottom:6px;padding:0 16px}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid #e8e8e4;display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+.tabbar-btn{flex:1;padding:12px 0;background:none;border:none;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;color:#aaa}
+.tabbar-btn.active{color:#0F6E56}
+.spinner{width:24px;height:24px;border:3px solid #e0e0e0;border-top-color:#0F6E56;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.q-back{background:none;border:none;color:#888;font-size:14px;cursor:pointer;font-family:inherit;padding:4px 0}
+.tf-btn{flex:1;padding:22px 0;font-size:40px;border-radius:16px;border:2px solid;background:#fafafa;cursor:pointer;font-weight:700}
+.tf-btn:active{opacity:.75}
+.fill-input{width:100%;padding:14px 16px;font-size:17px;border:2px solid #ddd;border-radius:14px;background:#fff;font-family:inherit;outline:none}
+.fill-input:focus{border-color:#0F6E56}
+.rate-btn{padding:13px 8px;border-radius:14px;border:1px solid;cursor:pointer;text-align:center;font-family:inherit}
+.rate-btn:active{opacity:.7}
+.topic-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid #f0f0ec;cursor:pointer}
+.topic-row:active{background:#f8f8f5}
+.sub-header{padding:10px 16px;display:flex;align-items:center;gap:8px;background:#f8f8f5;border-top:1px solid #e8e8e4}
+.stats-row{display:flex;gap:8px;margin:12px 16px 0}
+.stat-box{flex:1;border-radius:14px;padding:12px 8px;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="screen-loading" style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px">
+    <div class="spinner" style="width:36px;height:36px;border-width:4px"></div>
+    <div style="font-size:14px;color:#888">データを読み込み中...</div>
+  </div>
+
+  <div id="screen-main" class="hidden">
+    <div id="tab-home">
+      <div class="header">
+        <div>
+          <div style="font-size:11px;color:#888;letter-spacing:.06em;margin-bottom:2px">社労士一発合格</div>
+          <div style="font-size:22px;font-weight:700">学習ドリル</div>
+        </div>
+        <div style="background:#E1F5EE;padding:10px 14px;border-radius:14px;text-align:right">
+          <div style="font-size:28px;font-weight:700;color:#0F6E56;line-height:1" id="days-left">—</div>
+          <div style="font-size:10px;color:#085041;margin-top:2px">試験まで（日）</div>
+        </div>
+      </div>
+
+      <div style="margin:14px 16px 0">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:12px;color:#888">カリキュラム進捗</span>
+          <span style="font-size:12px;font-weight:600;color:#0F6E56" id="prog-label">0/61論点</span>
+        </div>
+        <div class="progress-bar">
+          <div id="prog-bar" style="height:100%;background:#0F6E56;border-radius:5px;width:0%;transition:width .5s"></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:4px">
+          <span style="font-size:10px;color:#0F6E56">● 定着</span>
+          <span style="font-size:10px;color:#aaa">3/29開始 → 7/31完了目標</span>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-box" style="background:#E1F5EE">
+          <div style="font-size:24px;font-weight:700;color:#0F6E56;line-height:1" id="s-mastered">0</div>
+          <div style="font-size:11px;color:#085041;margin-top:3px">定着済み</div>
+        </div>
+        <div class="stat-box" style="background:#E6F1FB">
+          <div style="font-size:24px;font-weight:700;color:#185FA5;line-height:1" id="s-due">0</div>
+          <div style="font-size:11px;color:#0C447C;margin-top:3px">復習待ち</div>
+        </div>
+        <div class="stat-box" id="s-over-box" style="background:#E1F5EE">
+          <div style="font-size:24px;font-weight:700;line-height:1;color:#0F6E56" id="s-over">0</div>
+          <div style="font-size:11px;margin-top:3px;color:#085041">遅延論点</div>
+        </div>
+      </div>
+
+      <div id="focus-loading" class="card hidden" style="display:none;align-items:center;gap:12px;padding:16px">
+        <div class="spinner"></div>
+        <div style="font-size:14px;color:#888" id="focus-msg">問題を生成中...</div>
+      </div>
+
+      <div id="focus-card" class="hidden" style="border-radius:14px;padding:16px;margin:12px 16px;border:2px solid">
+        <div id="fc-badge" style="font-size:11px;font-weight:600;margin-bottom:4px"></div>
+        <div id="fc-name" style="font-size:16px;font-weight:700;margin-bottom:8px;line-height:1.4"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <span id="fc-tag" class="tag"></span>
+          <span id="fc-date" style="font-size:11px"></span>
+          <span id="fc-rate" style="font-size:11px"></span>
+        </div>
+        <button id="fc-btn" class="btn" style="margin:0;width:100%">この論点を学習する →</button>
+      </div>
+
+      <div id="review-card" class="card hidden" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+        <div>
+          <div style="font-size:13px;font-weight:600">FSRS 忘却防止復習</div>
+          <div style="font-size:12px;color:#888" id="review-lbl"></div>
+        </div>
+        <button id="review-btn" style="background:#E6F1FB;color:#0C447C;border:none;cursor:pointer;border-radius:8px;padding:8px 14px;font-size:14px;font-weight:600;font-family:inherit">復習する</button>
+      </div>
+
+      <div id="upcoming-sec" style="margin-top:8px"></div>
+      <button class="btn btn-ghost" id="reset-btn" style="margin-top:16px;font-size:12px;padding:10px">データリセット</button>
+    </div>
+
+    <div id="tab-schedule" class="hidden">
+      <div style="padding:20px 16px 8px">
+        <div style="font-size:11px;color:#888;margin-bottom:2px">カリキュラム</div>
+        <div style="font-size:22px;font-weight:700">全論点スケジュール</div>
+        <div style="font-size:12px;color:#888;margin-top:4px">61論点 · 3/29〜6/22 · 7月は復習</div>
+        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+          <span style="font-size:11px;color:#888"><span style="color:#0F6E56;font-weight:700">✓</span> 定着</span>
+          <span style="font-size:11px;color:#888"><span style="color:#3B8BD4;font-weight:700">◎</span> 完了</span>
+          <span style="font-size:11px;color:#888"><span style="color:#EF9F27;font-weight:700">…</span> 学習中</span>
+          <span style="font-size:11px;color:#888"><span style="color:#c0392b;font-weight:700">!</span> 今日</span>
+          <span style="font-size:11px;color:#888"><span style="color:#aaa">○</span> 予定</span>
+        </div>
+      </div>
+      <div id="sched-list"></div>
+    </div>
+
+    <div class="tabbar">
+      <button class="tabbar-btn active" id="tb-home" onclick="switchTab('home')">🏠<br>ホーム</button>
+      <button class="tabbar-btn" id="tb-sched" onclick="switchTab('schedule')">📅<br>スケジュール</button>
+    </div>
+  </div>
+
+  <div id="screen-question" class="hidden">
+    <div style="padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:center">
+      <button class="q-back" id="q-back">← ホーム</button>
+      <span style="font-size:13px;color:#888;font-weight:600" id="q-cnt"></span>
+    </div>
+    <div style="height:4px;background:#e8e8e4;margin:0 16px 8px;border-radius:2px;overflow:hidden">
+      <div id="q-prog" style="height:100%;background:#0F6E56;border-radius:2px;transition:width .3s;width:0%"></div>
+    </div>
+    <div style="padding:2px 16px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="tag" id="q-sub"></span>
+      <span style="font-size:12px;color:#888;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="q-topic"></span>
+      <span class="tag" id="q-type"></span>
+    </div>
+    <div class="card" style="padding:20px;font-size:15px;line-height:2.0" id="q-text"></div>
+    <div style="display:flex;gap:14px;margin:4px 16px" id="tf-wrap">
+      <button class="tf-btn" style="color:#0F6E56;border-color:#0F6E56" onclick="submitAnswer('true')">○</button>
+      <button class="tf-btn" style="color:#c0392b;border-color:#c0392b" onclick="submitAnswer('false')">×</button>
+    </div>
+    <div class="hidden" id="fill-wrap" style="margin:4px 16px">
+      <div style="font-size:13px;color:#888;margin-bottom:8px">___に入る答えを入力してください</div>
+      <input class="fill-input" id="fill-in" type="text" placeholder="答えを入力...">
+      <button class="btn btn-primary" style="margin:10px 0;width:100%" onclick="submitFill()">答え合わせ</button>
+    </div>
+  </div>
+
+  <div id="screen-answer" class="hidden">
+    <div style="padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:center">
+      <button class="q-back" onclick="goScreen('question')">← 問題へ</button>
+      <span style="font-size:13px;color:#888;font-weight:600" id="a-cnt"></span>
+    </div>
+    <div class="card" id="result-banner" style="text-align:center;padding:20px">
+      <div style="font-size:40px;line-height:1;margin-bottom:4px" id="r-icon"></div>
+      <div style="font-size:18px;font-weight:700" id="r-label"></div>
+      <div style="font-size:13px;margin-top:4px" id="r-correct"></div>
+    </div>
+    <div class="card" style="padding:12px 16px">
+      <div style="font-size:11px;color:#888;margin-bottom:4px">問題</div>
+      <div style="font-size:13px;line-height:1.75;color:#666" id="a-q"></div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:#185FA5">解説</div>
+      <div id="a-exp"></div>
+    </div>
+    <div style="margin:8px 16px">
+      <div style="font-size:12px;color:#888;margin-bottom:8px;text-align:center">難しさは？（FSRSが次回出題日を計算）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="rate-btn" onclick="rateCard(1)" style="border-color:#c0392b33;background:#FAECE7"><div style="font-size:15px;font-weight:600;color:#c0392b">もう一度</div><div style="font-size:11px;color:#a93226;margin-top:2px">明日</div></button>
+        <button class="rate-btn" onclick="rateCard(2)" style="border-color:#854F0B33;background:#FAEEDA"><div style="font-size:15px;font-weight:600;color:#854F0B">難しい</div><div style="font-size:11px;color:#633806;margin-top:2px">数日後</div></button>
+        <button class="rate-btn" onclick="rateCard(3)" style="border-color:#185FA533;background:#E6F1FB"><div style="font-size:15px;font-weight:600;color:#185FA5">普通</div><div style="font-size:11px;color:#0C447C;margin-top:2px">標準</div></button>
+        <button class="rate-btn" onclick="rateCard(4)" style="border-color:#0F6E5633;background:#E1F5EE"><div style="font-size:15px;font-weight:600;color:#0F6E56">完璧</div><div style="font-size:11px;color:#085041;margin-top:2px">長め</div></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-complete" class="hidden" style="text-align:center;padding:50px 20px">
+    <div style="font-size:52px;margin-bottom:10px" id="cp-icon">🎯</div>
+    <div style="font-size:22px;font-weight:700;margin-bottom:4px">セッション完了</div>
+    <div style="font-size:13px;color:#888;margin-bottom:16px" id="cp-msg"></div>
+    <div class="card" style="display:inline-block;padding:20px 32px;margin:0 auto 16px;text-align:left">
+      <div style="font-size:12px;color:#888;margin-bottom:2px">論点</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px" id="cp-topic"></div>
+      <div style="display:flex;gap:24px">
+        <div><div style="font-size:11px;color:#888">正解数</div><div style="font-size:28px;font-weight:700;color:#0F6E56" id="cp-score"></div></div>
+        <div><div style="font-size:11px;color:#888">正答率</div><div style="font-size:28px;font-weight:700" id="cp-pct"></div></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:20px;line-height:1.8">FSRSが記憶定着を最適化しました。<br>毎日続けることで7月末に全論点完了できます。</div>
+    <button class="btn btn-primary" style="display:inline-block;width:auto;padding:14px 40px" onclick="goHome()">ダッシュボードへ</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL='https://owfmhxcoawezyyrwlrlt.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Zm1oeGNvYXdlenl5cndscmx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY5MjMsImV4cCI6MjA5MDM3MjkyM30.jWDNon4jG_qYxY1Vvr6Kr9JkAg8zjCQbHDJhKGiNJ28';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+/* ── FSRS ── */
+const W=[0.4,0.6,2.4,5.8,4.93,0.94,0.86,0.01,1.49,0.14,0.94,2.18,0.05,0.34,1.26,0.29,2.61];
+const DECAY=-0.5,FACTOR=19/81;
+const cI=s=>Math.max(1,Math.round(s));
+const iS=g=>Math.max(W[g-1],0.1);
+const iD=g=>Math.min(Math.max(W[4]-W[5]*(g-3),1),10);
+const nD=(d,g)=>Math.min(Math.max(W[6]*iD(3)+(1-W[6])*(d-W[7]*(g-3)),1),10);
+const rR=(t,s)=>s>0?Math.pow(1+FACTOR*t/s,DECAY):0.5;
+const nSR=(d,s,r,g)=>s*(Math.exp(W[8])*(11-d)*Math.pow(Math.max(s,.1),-W[9])*(Math.exp((1-r)*W[10])-1)*(g===2?W[15]:1)*(g===4?W[16]:1)+1);
+const nSF=(d,s,r)=>W[11]*Math.pow(Math.max(d,1),-W[12])*(Math.pow(s+1,W[13])-1)*Math.exp((1-r)*W[14]);
+function calcFsrs(card,grade){
+  const now=new Date(),el=card.last_review?(now-new Date(card.last_review))/86400000:0;
+  let st=card.state||0,s=card.stability||0,d=card.difficulty||iD(3),iv;
+  if(st<=1){s=iS(grade);d=st===0?iD(grade):nD(d,grade);iv=grade===1?1:cI(s);st=grade===1?1:2;}
+  else{const r=rR(el,s);d=nD(d,grade);if(grade===1){s=nSF(d,s,r);st=3;iv=1;}else{s=nSR(d,s,r,grade);st=2;iv=cI(s);}}
+  const due=new Date(now);due.setDate(due.getDate()+iv);
+  return{...card,state:st,stability:s,difficulty:d,due:due.toISOString(),last_review:now.toISOString(),reps:(card.reps||0)+1,lapses:grade===1?(card.lapses||0)+1:(card.lapses||0),scheduled_days:iv};
+}
+
+/* ── 定数 ── */
+const EXAM=new Date("2026-08-30"),SSTART=new Date("2026-03-29");
+const SUBS={
+  roudou:{name:"労働基準法",short:"労基",c:"#0F6E56",bg:"#E1F5EE",tc:"#085041"},
+  anzen:{name:"労働安全衛生法",short:"安衛",c:"#3B6D11",bg:"#EAF3DE",tc:"#27500A"},
+  rousai:{name:"労災補償保険法",short:"労災",c:"#854F0B",bg:"#FAEEDA",tc:"#633806"},
+  koyou:{name:"雇用保険法",short:"雇保",c:"#534AB7",bg:"#EEEDFE",tc:"#3C3489"},
+  choshu:{name:"労働保険徴収法",short:"徴収",c:"#72243E",bg:"#FBEAF0",tc:"#4B1528"},
+  kenpo:{name:"健康保険法",short:"健保",c:"#993C1D",bg:"#FAECE7",tc:"#712B13"},
+  kokunen:{name:"国民年金法",short:"国年",c:"#185FA5",bg:"#E6F1FB",tc:"#0C447C"},
+  nenkin:{name:"厚生年金保険法",short:"厚年",c:"#444441",bg:"#F1EFE8",tc:"#2C2C2A"},
+};
+const CUR=[
+  {id:"c01",subject:"roudou",name:"労働契約・就業規則",offset:0},
+  {id:"c02",subject:"roudou",name:"労働時間の原則（法定・特例）",offset:2},
+  {id:"c03",subject:"roudou",name:"時間外・休日労働（36協定・上限規制）",offset:3},
+  {id:"c04",subject:"roudou",name:"変形労働時間制（1ヶ月・1年・フレックス）",offset:5},
+  {id:"c05",subject:"roudou",name:"休憩・休日（付与義務・振替・代休）",offset:7},
+  {id:"c06",subject:"roudou",name:"年次有給休暇（付与・取得・比例付与）",offset:8},
+  {id:"c07",subject:"roudou",name:"賃金（5原則・平均賃金・割増賃金）",offset:10},
+  {id:"c08",subject:"roudou",name:"解雇・退職（予告・制限・打切補償）",offset:11},
+  {id:"c09",subject:"roudou",name:"年少者・妊産婦・育児時間の保護",offset:13},
+  {id:"c10",subject:"roudou",name:"就業規則・制裁・罰則",offset:14},
+  {id:"c11",subject:"anzen",name:"安全衛生管理体制（統括・安全・衛生・産業医）",offset:15},
+  {id:"c12",subject:"anzen",name:"健康診断（定期・雇入れ・特殊・記録保存）",offset:16},
+  {id:"c13",subject:"anzen",name:"ストレスチェック・面接指導",offset:17},
+  {id:"c14",subject:"anzen",name:"安全衛生教育（雇入れ・特別教育）",offset:18},
+  {id:"c15",subject:"anzen",name:"特定化学物質・有機溶剤等の規制",offset:19},
+  {id:"c16",subject:"rousai",name:"業務災害・通勤災害の認定基準",offset:20},
+  {id:"c17",subject:"rousai",name:"療養（補償）給付（業務vs通勤）",offset:22},
+  {id:"c18",subject:"rousai",name:"休業（補償）給付・傷病（補償）年金",offset:23},
+  {id:"c19",subject:"rousai",name:"障害（補償）給付（等級・年金・一時金）",offset:25},
+  {id:"c20",subject:"rousai",name:"遺族（補償）給付（受給権者・額）",offset:26},
+  {id:"c21",subject:"rousai",name:"介護（補償）給付・葬祭料・特別支給金",offset:28},
+  {id:"c22",subject:"rousai",name:"二次健康診断等給付・特別加入",offset:29},
+  {id:"c23",subject:"rousai",name:"費用徴収・不服申立・時効",offset:31},
+  {id:"c24",subject:"koyou",name:"被保険者の種類・マルチジョブホルダー",offset:32},
+  {id:"c25",subject:"koyou",name:"基本手当（受給資格・賃金日額・給付日数）",offset:33},
+  {id:"c26",subject:"koyou",name:"基本手当（給付制限・受給期間・延長）",offset:35},
+  {id:"c27",subject:"koyou",name:"就職促進給付（再就職手当等）",offset:37},
+  {id:"c28",subject:"koyou",name:"教育訓練給付（一般・専門実践）",offset:38},
+  {id:"c29",subject:"koyou",name:"雇用継続給付（高年齢・介護休業）",offset:40},
+  {id:"c30",subject:"koyou",name:"育児休業給付（支給額・期間）",offset:41},
+  {id:"c31",subject:"koyou",name:"雇用保険二事業・不服申立・時効",offset:43},
+  {id:"c32",subject:"choshu",name:"保険関係の成立・消滅・一括有期事業",offset:44},
+  {id:"c33",subject:"choshu",name:"概算保険料・修正申告・延納",offset:45},
+  {id:"c34",subject:"choshu",name:"確定保険料・メリット制・追徴金",offset:46},
+  {id:"c35",subject:"choshu",name:"労働保険事務組合・印紙保険料",offset:47},
+  {id:"c36",subject:"choshu",name:"特別加入（種類・要件）",offset:48},
+  {id:"c37",subject:"choshu",name:"不服申立・時効・通則",offset:49},
+  {id:"c38",subject:"kenpo",name:"被保険者・適用事業所・任意継続",offset:50},
+  {id:"c39",subject:"kenpo",name:"標準報酬月額（定時決定・随時改定）",offset:51},
+  {id:"c40",subject:"kenpo",name:"保険料（率・労使負担・納付）",offset:53},
+  {id:"c41",subject:"kenpo",name:"療養給付・高額療養費",offset:54},
+  {id:"c42",subject:"kenpo",name:"傷病手当金（要件・額・通算）",offset:55},
+  {id:"c43",subject:"kenpo",name:"出産育児一時金・出産手当金・埋葬料",offset:56},
+  {id:"c44",subject:"kenpo",name:"被扶養者（認定・収入要件）",offset:57},
+  {id:"c45",subject:"kenpo",name:"審査請求・時効・通則",offset:59},
+  {id:"c46",subject:"kokunen",name:"被保険者（1・2・3号）・任意加入",offset:62},
+  {id:"c47",subject:"kokunen",name:"保険料（額・免除・猶予・前納・追納）",offset:63},
+  {id:"c48",subject:"kokunen",name:"老齢基礎年金（受給要件・年金額）",offset:65},
+  {id:"c49",subject:"kokunen",name:"老齢基礎年金（繰上げ・繰下げ）",offset:66},
+  {id:"c50",subject:"kokunen",name:"障害基礎年金（認定日・納付要件・額）",offset:68},
+  {id:"c51",subject:"kokunen",name:"遺族基礎年金（受給権者・子の定義）",offset:69},
+  {id:"c52",subject:"kokunen",name:"付加年金・寡婦年金・死亡一時金",offset:71},
+  {id:"c53",subject:"kokunen",name:"国民年金基金・時効・審査請求",offset:73},
+  {id:"c54",subject:"nenkin",name:"被保険者・適用事業所・高齢任意加入",offset:74},
+  {id:"c55",subject:"nenkin",name:"標準報酬月額・保険料（18.3%・労使折半）",offset:75},
+  {id:"c56",subject:"nenkin",name:"老齢厚生年金（特別支給・本来支給）",offset:77},
+  {id:"c57",subject:"nenkin",name:"在職老齢年金・繰上げ繰下げ",offset:79},
+  {id:"c58",subject:"nenkin",name:"障害厚生年金・障害手当金",offset:80},
+  {id:"c59",subject:"nenkin",name:"遺族厚生年金（受給権者・年齢要件）",offset:82},
+  {id:"c60",subject:"nenkin",name:"離婚時年金分割（合意・3号）",offset:83},
+  {id:"c61",subject:"nenkin",name:"経過措置・脱退一時金・時効",offset:85},
+];
+
+/* ── 状態 ── */
+let allCards=[],queue=[],qIdx=0,sC=0,sT=0,sTopic="",focusTopic=null,busy=false;
+
+/* ── Supabase ── */
+async function loadCards(){const{data,error}=await sb.from('cards').select('*');if(error)throw error;return data||[];}
+async function upsertCard(card){
+  const{error}=await sb.from('cards').upsert({
+    id:card.id,topic_id:card.topic_id,subject:card.subject,topic:card.topic,
+    type:card.type,question:card.question,answer:card.answer,explanation:card.explanation,
+    state:card.state||0,stability:card.stability||0,difficulty:card.difficulty||0,
+    due:card.due,last_review:card.last_review||null,reps:card.reps||0,
+    lapses:card.lapses||0,scheduled_days:card.scheduled_days||0,
+  });
+  if(error)console.error('upsert:',error);
+}
+
+/* ── AI生成 ── */
+async function genQ(topic){
+  const sub=SUBS[topic.subject]?.name||topic.subject;
+  const res=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2500,
+      messages:[{role:"user",content:`社労士試験「${sub}」の「${topic.name}」について本試験レベルの問題を5問（正誤3問・穴埋め2問）作成。以下のひっかけを盛り込む：①以上/超える/未満/以下の混同 ②改正前後の数字 ③原則と例外 ④複数要件の一方だけ正しい ⑤似た制度の混同。JSONのみ（バッククォート不要）：{"q":[{"type":"truefalse","q":"問題文","a":"true","e":"【根拠】条文番号\\n【解説】解説\\n【引っ掛け】ポイント"},{"type":"fillin","q":"___含む問題文","a":"答え","e":"..."}]}`}]})
+  });
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const d=await res.json();
+  const txt=(d.content?.[0]?.text||"").replace(/```json|```/g,"").trim();
+  return JSON.parse(txt).q.map((q,i)=>({
+    id:`${topic.id}_${Date.now()}_${i}`,topic_id:topic.id,subject:topic.subject,topic:topic.name,
+    type:q.type,question:q.q,answer:String(q.a),explanation:q.e||"",
+    state:0,stability:0,difficulty:0,due:new Date().toISOString(),
+    last_review:null,reps:0,lapses:0,scheduled_days:0
+  }));
+}
+
+/* ── カリキュラム ── */
+function schedDate(off){const d=new Date(SSTART);d.setDate(d.getDate()+off);d.setHours(0,0,0,0);return d;}
+function tStat(tid){
+  const tc=allCards.filter(c=>c.topic_id===tid);
+  const tried=tc.filter(c=>c.reps>0);
+  const ok=tried.filter(c=>(c.lapses||0)/Math.max(c.reps,1)<0.3).length;
+  const rate=tried.length>0?ok/tried.length:0;
+  return{count:tc.length,tried:tried.length,rate,done:tried.length>=5,mastered:tried.length>=5&&rate>=0.7};
+}
+function getCur(){
+  const today=new Date();today.setHours(0,0,0,0);
+  return CUR.map(t=>{
+    const date=schedDate(t.offset),st=tStat(t.id),isDue=date<=today,overdue=isDue&&!st.tried&&date<today;
+    const status=st.mastered?"mastered":st.done?"done":st.tried>0?"studying":isDue?"ready":"upcoming";
+    return{...t,date,st,status,overdue,isDue};
+  });
+}
+
+/* ── 画面切り替え ── */
+function goScreen(n){['loading','main','question','answer','complete'].forEach(s=>document.getElementById('screen-'+s).classList.toggle('hidden',s!==n));}
+function switchTab(n){
+  document.getElementById('tab-home').classList.toggle('hidden',n!=='home');
+  document.getElementById('tab-schedule').classList.toggle('hidden',n!=='schedule');
+  document.getElementById('tb-home').classList.toggle('active',n==='home');
+  document.getElementById('tb-sched').classList.toggle('active',n==='schedule');
+  if(n==='schedule')renderSched();
+}
+function goHome(){goScreen('main');switchTab('home');renderHome();}
+
+/* ── ホーム描画 ── */
+function renderHome(){
+  const now=new Date(),today=new Date(now);today.setHours(0,0,0,0);
+  document.getElementById('days-left').textContent=Math.max(0,Math.ceil((EXAM-now)/86400000));
+  const cur=getCur();
+  const due=allCards.filter(c=>new Date(c.due)<=now);
+  const mastered=cur.filter(t=>t.status==="mastered").length;
+  const done=cur.filter(t=>t.st.tried>0).length;
+  const overdue=cur.filter(t=>t.overdue);
+  document.getElementById('prog-label').textContent=`${done}/61論点 (${Math.round(done/61*100)}%)`;
+  document.getElementById('prog-bar').style.width=`${mastered/61*100}%`;
+  document.getElementById('s-mastered').textContent=mastered;
+  document.getElementById('s-due').textContent=due.length;
+  document.getElementById('s-over').textContent=overdue.length;
+  const ob=document.getElementById('s-over-box');
+  if(overdue.length>0){ob.style.background='#FCEBEB';document.getElementById('s-over').style.color='#E24B4A';}
+  else{ob.style.background='#E1F5EE';document.getElementById('s-over').style.color='#0F6E56';}
+
+  focusTopic=overdue[0]||cur.find(t=>t.status==="studying")||cur.find(t=>t.status==="ready");
+  const fc=document.getElementById('focus-card');
+  if(focusTopic&&!busy){
+    fc.classList.remove('hidden');
+    const s=SUBS[focusTopic.subject];
+    fc.style.borderColor=s.c;fc.style.background=s.bg;
+    const diff=Math.round((today-focusTopic.date)/86400000);
+    const badge=document.getElementById('fc-badge');
+    badge.style.color=s.tc;
+    badge.textContent=focusTopic.overdue?`⚠ ${diff}日遅延 — 今すぐやろう`:focusTopic.status==="studying"?"📖 学習継続中":"📅 今日の論点";
+    const nm=document.getElementById('fc-name');nm.style.color=s.c;nm.textContent=focusTopic.name;
+    const tg=document.getElementById('fc-tag');tg.style.background=s.c;tg.style.color='#fff';tg.textContent=s.short;
+    document.getElementById('fc-date').style.color=s.tc;
+    document.getElementById('fc-date').textContent=`予定: ${focusTopic.date.getMonth()+1}/${focusTopic.date.getDate()}`;
+    const rt=document.getElementById('fc-rate');rt.style.color=s.tc;
+    rt.textContent=focusTopic.st.tried>0?`正答率 ${Math.round(focusTopic.st.rate*100)}%`:'';
+    const btn=document.getElementById('fc-btn');btn.style.background=s.c;btn.style.color='#fff';
+  } else {fc.classList.add('hidden');}
+
+  const rc=document.getElementById('review-card');
+  if(due.length>0&&!busy){rc.classList.remove('hidden');document.getElementById('review-lbl').textContent=`${due.length}問が復習タイミングです`;}
+  else rc.classList.add('hidden');
+
+  const upcoming=cur.filter(t=>{const d=(t.date-today)/86400000;return d>0&&d<=14;}).slice(0,10);
+  const sec=document.getElementById('upcoming-sec');
+  if(upcoming.length){
+    sec.innerHTML=`<div class="sec">今後14日間のスケジュール</div><div style="padding:0 16px">${upcoming.map(t=>{
+      const diff=Math.round((t.date-today)/86400000),s=SUBS[t.subject];
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0ec">
+        <div style="width:30px;font-size:10px;font-weight:600;color:#888;text-align:center">${diff===1?"明日":"+"+diff+"日"}</div>
+        <span class="tag" style="background:${s.bg};color:${s.tc}">${s.short}</span>
+        <span style="font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</span>
+      </div>`;
+    }).join('')}</div>`;
+  } else sec.innerHTML='';
+}
+
+/* ── スケジュール描画 ── */
+function renderSched(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const cur=getCur();
+  const si={mastered:{i:"✓",c:"#0F6E56"},done:{i:"◎",c:"#3B8BD4"},studying:{i:"…",c:"#EF9F27"},ready:{i:"!",c:"#c0392b"},upcoming:{i:"○",c:"#aaa"}};
+  document.getElementById('sched-list').innerHTML=Object.entries(SUBS).map(([id,s])=>{
+    const topics=cur.filter(t=>t.subject===id);
+    const m=topics.filter(t=>t.status==="mastered").length;
+    return `<div>
+      <div class="sub-header"><span class="tag" style="background:${s.bg};color:${s.tc}">${s.short}</span><span style="font-size:13px;font-weight:600;flex:1">${s.name}</span><span style="font-size:11px;color:#888">${m}/${topics.length} 定着</span></div>
+      ${topics.map(t=>{
+        const v=si[t.status]||si.upcoming,diff=Math.round((t.date-today)/86400000);
+        const dl=diff<0?`${Math.abs(diff)}日遅延`:diff===0?"今日":diff===1?"明日":`${t.date.getMonth()+1}/${t.date.getDate()}`;
+        const dc=diff<0?"#E24B4A":diff===0?"#0F6E56":"#aaa";
+        return `<div class="topic-row" onclick="startById('${t.id}')">
+          <span style="font-size:14px;font-weight:700;width:16px;flex-shrink:0;text-align:center;color:${v.c}">${v.i}</span>
+          <div style="flex:1"><div style="font-size:13px;line-height:1.4">${t.name}</div>${t.st.tried>0?`<div style="font-size:11px;color:#aaa;margin-top:2px">正答率 ${Math.round(t.st.rate*100)}% · ${t.st.tried}問挑戦</div>`:''}</div>
+          <div style="font-size:11px;font-weight:600;flex-shrink:0;color:${dc}">${dl}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+/* ── 論点学習 ── */
+async function startById(id){const t=CUR.find(x=>x.id===id);if(t&&!busy)await startTopic(t);}
+async function startTopic(topic){
+  if(busy)return;
+  busy=true;
+  document.getElementById('focus-card').classList.add('hidden');
+  document.getElementById('review-card').classList.add('hidden');
+  const fl=document.getElementById('focus-loading');
+  fl.style.display='flex';fl.classList.remove('hidden');
+  document.getElementById('focus-msg').textContent=`「${topic.name}」の問題を生成中...`;
+  try{
+    let existing=allCards.filter(c=>c.topic_id===topic.id);
+    if(existing.length<5){
+      const newC=await genQ(topic);
+      for(const c of newC)await upsertCard(c);
+      allCards=[...allCards,...newC];
+      existing=allCards.filter(c=>c.topic_id===topic.id);
+    }
+    const now=new Date();
+    const fresh=existing.filter(c=>!c.reps||c.reps===0);
+    const topicDue=existing.filter(c=>c.reps>0&&new Date(c.due)<=now);
+    const otherDue=allCards.filter(c=>c.topic_id!==topic.id&&new Date(c.due)<=now).slice(0,5);
+    const q=[...fresh,...topicDue,...otherDue].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i);
+    if(!q.length){alert("この論点は定着済みです！");busy=false;fl.style.display='none';renderHome();return;}
+    queue=q;qIdx=0;sC=0;sT=0;sTopic=topic.name;
+    renderQ();goScreen('question');
+  }catch(e){console.error(e);alert("問題の生成に失敗しました。ネットワーク接続を確認してください。");}
+  finally{busy=false;fl.style.display='none';renderHome();}
+}
+async function startReview(){
+  const now=new Date(),due=allCards.filter(c=>new Date(c.due)<=now);
+  if(!due.length)return;
+  queue=due.slice(0,30);qIdx=0;sC=0;sT=0;sTopic="FSRS復習";
+  renderQ();goScreen('question');
+}
+
+/* ── 問題描画 ── */
+function renderQ(){
+  const c=queue[qIdx];if(!c)return;
+  const s=SUBS[c.subject]||{};
+  document.getElementById('q-cnt').textContent=`${qIdx+1} / ${queue.length}`;
+  document.getElementById('q-prog').style.width=`${(qIdx+1)/queue.length*100}%`;
+  const sub=document.getElementById('q-sub');sub.style.background=s.bg||'#eee';sub.style.color=s.tc||'#333';sub.textContent=s.short||'';
+  document.getElementById('q-topic').textContent=c.topic||'';
+  const tt=document.getElementById('q-type');
+  if(c.type==='truefalse'){tt.style.background='#EEEDFE';tt.style.color='#3C3489';tt.textContent='○×';document.getElementById('tf-wrap').classList.remove('hidden');document.getElementById('fill-wrap').classList.add('hidden');}
+  else{tt.style.background='#E6F1FB';tt.style.color='#0C447C';tt.textContent='穴埋め';document.getElementById('tf-wrap').classList.add('hidden');document.getElementById('fill-wrap').classList.remove('hidden');document.getElementById('fill-in').value='';setTimeout(()=>document.getElementById('fill-in').focus(),100);}
+  document.getElementById('q-text').textContent=c.question||'';
+}
+
+/* ── 回答 ── */
+function submitAnswer(val){
+  const c=queue[qIdx];if(!c)return;
+  const correct=c.type==='truefalse'?val===c.answer:val.toLowerCase().replace(/[\s・]/g,'')===(c.answer||'').toLowerCase().replace(/[\s・]/g,'');
+  document.getElementById('a-cnt').textContent=`${qIdx+1} / ${queue.length}`;
+  const banner=document.getElementById('result-banner');
+  banner.style.background=correct?'#E1F5EE':'#FAECE7';
+  banner.style.border=`1px solid ${correct?'#5DCAA5':'#F0997B'}`;
+  document.getElementById('r-icon').textContent=correct?'○':'×';
+  document.getElementById('r-label').style.color=correct?'#0F6E56':'#c0392b';
+  document.getElementById('r-label').textContent=correct?'正解！':'不正解';
+  const rc=document.getElementById('r-correct');
+  rc.style.color='#a93226';rc.textContent=correct?'':('正解: 「'+(c.type==='truefalse'?(c.answer==='true'?'○':'×'):c.answer)+'」');
+  document.getElementById('a-q').textContent=c.question||'';
+  document.getElementById('a-exp').innerHTML=(c.explanation||'').split('\n').map(line=>{
+    const m=line.match(/^【(.+?)】(.*)/);
+    if(m)return `<div style="margin-bottom:10px"><span style="background:#E6F1FB;color:#0C447C;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-right:6px">【${m[1]}】</span><span style="font-size:14px;line-height:1.75">${m[2]}</span></div>`;
+    return line?`<div style="font-size:14px;line-height:1.75;margin-bottom:4px">${line}</div>`:'';
+  }).join('');
+  queue[qIdx]._correct=correct;
+  goScreen('answer');
+}
+function submitFill(){const v=document.getElementById('fill-in').value.trim();if(v)submitAnswer(v);}
+
+/* ── FSRS評価 ── */
+async function rateCard(grade){
+  const c=queue[qIdx];if(!c)return;
+  sC+=c._correct?1:0;sT++;
+  const updated=calcFsrs(c,grade);
+  await upsertCard(updated);
+  const idx=allCards.findIndex(x=>x.id===c.id);
+  if(idx>=0)allCards[idx]=updated;else allCards.push(updated);
+  if(qIdx+1<queue.length){qIdx++;renderQ();goScreen('question');}
+  else{renderComplete();goScreen('complete');}
+}
+
+/* ── 完了 ── */
+function renderComplete(){
+  const pct=Math.round(sC/Math.max(sT,1)*100);
+  document.getElementById('cp-icon').textContent=pct>=80?"🎯":pct>=60?"📚":"💪";
+  document.getElementById('cp-msg').textContent=pct>=80?"合格ライン超え！この調子で":pct>=60?"惜しい。苦手論点を復習しよう":"基礎から見直そう";
+  document.getElementById('cp-topic').textContent=sTopic;
+  document.getElementById('cp-score').textContent=`${sC}/${sT}`;
+  const p=document.getElementById('cp-pct');p.textContent=pct+'%';p.style.color=pct>=70?"#0F6E56":pct>=50?"#185FA5":"#c0392b";
+}
+
+/* ── イベント ── */
+document.getElementById('fc-btn').addEventListener('click',()=>{if(focusTopic&&!busy)startTopic(focusTopic);});
+document.getElementById('review-btn').addEventListener('click',startReview);
+document.getElementById('q-back').addEventListener('click',goHome);
+document.getElementById('fill-in').addEventListener('keydown',e=>{if(e.key==='Enter')submitFill();});
+document.getElementById('reset-btn').addEventListener('click',async()=>{
+  if(!confirm("全データを削除しますか？"))return;
+  await sb.from('cards').delete().neq('id','__x__');
+  allCards=[];renderHome();
+});
+
+/* ── 初期化 ── */
+(async()=>{
+  try{allCards=await loadCards();}catch(e){console.error(e);allCards=[];}
+  renderHome();
+  goScreen('main');
+})();
+</script>
+</body>
+</html>
