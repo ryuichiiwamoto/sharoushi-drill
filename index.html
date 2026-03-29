@@ -78,14 +78,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP"
       <div style="margin:14px 16px 0">
         <div style="display:flex;justify-content:space-between;margin-bottom:5px">
           <span style="font-size:12px;color:#888">カリキュラム進捗</span>
-          <span style="font-size:12px;font-weight:600;color:#0F6E56" id="prog-label">0/61論点</span>
+          <span style="font-size:12px;font-weight:600;color:#0F6E56" id="prog-label">0/79論点</span>
         </div>
         <div class="progress-bar">
           <div id="prog-bar" style="height:100%;background:#0F6E56;border-radius:5px;width:0%;transition:width .5s"></div>
         </div>
         <div style="display:flex;gap:12px;margin-top:4px">
           <span style="font-size:10px;color:#0F6E56">● 定着</span>
-          <span style="font-size:10px;color:#aaa">3/29開始 → 7/31完了目標</span>
+          <span style="font-size:10px;color:#aaa">3/29開始 → 7/31全論点完了 → 8/30本試験</span>
         </div>
       </div>
 
@@ -137,7 +137,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP"
       <div style="padding:20px 16px 8px">
         <div style="font-size:11px;color:#888;margin-bottom:2px">カリキュラム</div>
         <div style="font-size:22px;font-weight:700">全論点スケジュール</div>
-        <div style="font-size:12px;color:#888;margin-top:4px">61論点 · 3/29〜6/22 · 7月は復習</div>
+        <div style="font-size:12px;color:#888;margin-top:4px">79論点（10科目） · 3/29〜7/31 · 8月は総仕上げ</div>
         <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
           <span style="font-size:11px;color:#888"><span style="color:#0F6E56;font-weight:700">✓</span> 定着</span>
           <span style="font-size:11px;color:#888"><span style="color:#3B8BD4;font-weight:700">◎</span> 完了</span>
@@ -149,9 +149,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP"
       <div id="sched-list"></div>
     </div>
 
+    <div id="tab-import" class="hidden">
+      <div style="padding:20px 16px 8px">
+        <div style="font-size:11px;color:#888;margin-bottom:2px">問題一括取込</div>
+        <div style="font-size:22px;font-weight:700">PDF問題インポート</div>
+        <div style="font-size:12px;color:#888;margin-top:4px;line-height:1.6">トレーニング問題集・過去問PDFを選択すると<br>Claude AIが自動で問題を解析して登録します</div>
+      </div>
+
+      <div class="card" style="margin:12px 16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:#0F6E56">📂 PDFファイルを選択</div>
+        <div style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.7">
+          対応ファイル：トレーニング労災.pdf・トレーニング雇用.pdf・過去10労災保険.pdf・過去10雇用.pdf など
+        </div>
+        <input type="file" id="pdf-file-input" accept=".pdf" style="display:none" onchange="handlePDFSelect(event)">
+        <button onclick="document.getElementById('pdf-file-input').click()" class="btn btn-primary" style="margin:0;width:100%">PDFを選択して取込む</button>
+      </div>
+
+      <div id="import-progress" class="card hidden" style="margin:12px 16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div class="spinner"></div>
+          <div>
+            <div style="font-size:14px;font-weight:600" id="import-status">解析中...</div>
+            <div style="font-size:12px;color:#888;margin-top:2px" id="import-detail"></div>
+          </div>
+        </div>
+        <div style="background:#e8e8e4;height:6px;border-radius:3px;overflow:hidden">
+          <div id="import-bar" style="height:100%;background:#0F6E56;border-radius:3px;transition:width .5s;width:0%"></div>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:6px;text-align:right" id="import-count">0問</div>
+      </div>
+
+      <div id="import-result" class="card hidden" style="margin:12px 16px;border:2px solid #0F6E56;background:#E1F5EE">
+        <div style="font-size:32px;margin-bottom:8px;text-align:center">✅</div>
+        <div style="font-size:16px;font-weight:700;text-align:center;color:#0F6E56;margin-bottom:4px">インポート完了！</div>
+        <div style="font-size:13px;color:#085041;text-align:center" id="import-result-msg"></div>
+        <button onclick="goHome()" class="btn btn-primary" style="margin:16px 0 0">ホームへ戻る</button>
+      </div>
+
+      <div class="card" style="margin:12px 16px;background:#FFF8E1;border-color:#F9A825">
+        <div style="font-size:12px;font-weight:600;color:#6D4C0F;margin-bottom:6px">💡 取込みのしくみ</div>
+        <div style="font-size:11px;color:#6D4C0F;line-height:1.8">
+          1. PDF全ページのテキストを抽出<br>
+          2. Claude AIが問題を1問ずつ解析<br>
+          3. 論点（c01〜c79）に自動分類<br>
+          4. SupabaseにFSRSカードとして保存<br>
+          5. 次回から通常の問題練習で出題
+        </div>
+      </div>
+
+      <div id="import-history" style="margin:8px 16px 80px">
+        <div class="sec">取込み履歴</div>
+        <div id="import-history-list" style="font-size:12px;color:#888;padding:8px 0">まだ取込みがありません</div>
+      </div>
+    </div>
+
     <div class="tabbar">
       <button class="tabbar-btn active" id="tb-home" onclick="switchTab('home')">🏠<br>ホーム</button>
       <button class="tabbar-btn" id="tb-sched" onclick="switchTab('schedule')">📅<br>スケジュール</button>
+      <button class="tabbar-btn" id="tb-import" onclick="switchTab('import')">📄<br>PDF取込</button>
     </div>
   </div>
 
@@ -199,7 +254,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP"
       <div id="a-exp"></div>
     </div>
     <div style="margin:8px 16px">
-      <div style="font-size:12px;color:#888;margin-bottom:8px;text-align:center">難しさは？（FSRSが次回出題日を計算）</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px;text-align:center">難しさに？（FSRSが次回出題日を計算）</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="rate-btn" onclick="rateCard(1)" style="border-color:#c0392b33;background:#FAECE7"><div style="font-size:15px;font-weight:600;color:#c0392b">もう一度</div><div style="font-size:11px;color:#a93226;margin-top:2px">明日</div></button>
         <button class="rate-btn" onclick="rateCard(2)" style="border-color:#854F0B33;background:#FAEEDA"><div style="font-size:15px;font-weight:600;color:#854F0B">難しい</div><div style="font-size:11px;color:#633806;margin-top:2px">数日後</div></button>
@@ -227,6 +282,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP"
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <script>
 const SUPA_URL='https://owfmhxcoawezyyrwlrlt.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Zm1oeGNvYXdlenl5cndscmx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY5MjMsImV4cCI6MjA5MDM3MjkyM30.jWDNon4jG_qYxY1Vvr6Kr9JkAg8zjCQbHDJhKGiNJ28';
@@ -256,75 +313,105 @@ const EXAM=new Date("2026-08-30"),SSTART=new Date("2026-03-29");
 const SUBS={
   roudou:{name:"労働基準法",short:"労基",c:"#0F6E56",bg:"#E1F5EE",tc:"#085041"},
   anzen:{name:"労働安全衛生法",short:"安衛",c:"#3B6D11",bg:"#EAF3DE",tc:"#27500A"},
-  rousai:{name:"労災補償保険法",short:"労災",c:"#854F0B",bg:"#FAEEDA",tc:"#633806"},
+  rousai:{name:"労働者災害補償保険法",short:"労災",c:"#854F0B",bg:"#FAEEDA",tc:"#633806"},
   koyou:{name:"雇用保険法",short:"雇保",c:"#534AB7",bg:"#EEEDFE",tc:"#3C3489"},
   choshu:{name:"労働保険徴収法",short:"徴収",c:"#72243E",bg:"#FBEAF0",tc:"#4B1528"},
+  roudouippan:{name:"労働に関する一般常識",short:"労一",c:"#6B3FA0",bg:"#F2EAFC",tc:"#4B2980"},
   kenpo:{name:"健康保険法",short:"健保",c:"#993C1D",bg:"#FAECE7",tc:"#712B13"},
   kokunen:{name:"国民年金法",short:"国年",c:"#185FA5",bg:"#E6F1FB",tc:"#0C447C"},
   nenkin:{name:"厚生年金保険法",short:"厚年",c:"#444441",bg:"#F1EFE8",tc:"#2C2C2A"},
+  shakaiippan:{name:"社会保険に関する一般常識",short:"社一",c:"#0E6B9A",bg:"#E0F0FA",tc:"#0B4D70"},
 };
 const CUR=[
-  {id:"c01",subject:"roudou",name:"労働契約・就業規則",offset:0},
-  {id:"c02",subject:"roudou",name:"労働時間の原則（法定・特例）",offset:2},
-  {id:"c03",subject:"roudou",name:"時間外・休日労働（36協定・上限規制）",offset:3},
-  {id:"c04",subject:"roudou",name:"変形労働時間制（1ヶ月・1年・フレックス）",offset:5},
-  {id:"c05",subject:"roudou",name:"休憩・休日（付与義務・振替・代休）",offset:7},
-  {id:"c06",subject:"roudou",name:"年次有給休暇（付与・取得・比例付与）",offset:8},
-  {id:"c07",subject:"roudou",name:"賃金（5原則・平均賃金・割増賃金）",offset:10},
-  {id:"c08",subject:"roudou",name:"解雇・退職（予告・制限・打切補償）",offset:11},
-  {id:"c09",subject:"roudou",name:"年少者・妊産婦・育児時間の保護",offset:13},
-  {id:"c10",subject:"roudou",name:"就業規則・制裁・罰則",offset:14},
-  {id:"c11",subject:"anzen",name:"安全衛生管理体制（統括・安全・衛生・産業医）",offset:15},
-  {id:"c12",subject:"anzen",name:"健康診断（定期・雇入れ・特殊・記録保存）",offset:16},
-  {id:"c13",subject:"anzen",name:"ストレスチェック・面接指導",offset:17},
-  {id:"c14",subject:"anzen",name:"安全衛生教育（雇入れ・特別教育）",offset:18},
-  {id:"c15",subject:"anzen",name:"特定化学物質・有機溶剤等の規制",offset:19},
-  {id:"c16",subject:"rousai",name:"業務災害・通勤災害の認定基準",offset:20},
-  {id:"c17",subject:"rousai",name:"療養（補償）給付（業務vs通勤）",offset:22},
-  {id:"c18",subject:"rousai",name:"休業（補償）給付・傷病（補償）年金",offset:23},
-  {id:"c19",subject:"rousai",name:"障害（補償）給付（等級・年金・一時金）",offset:25},
-  {id:"c20",subject:"rousai",name:"遺族（補償）給付（受給権者・額）",offset:26},
-  {id:"c21",subject:"rousai",name:"介護（補償）給付・葬祭料・特別支給金",offset:28},
-  {id:"c22",subject:"rousai",name:"二次健康診断等給付・特別加入",offset:29},
-  {id:"c23",subject:"rousai",name:"費用徴収・不服申立・時効",offset:31},
-  {id:"c24",subject:"koyou",name:"被保険者の種類・マルチジョブホルダー",offset:32},
-  {id:"c25",subject:"koyou",name:"基本手当（受給資格・賃金日額・給付日数）",offset:33},
-  {id:"c26",subject:"koyou",name:"基本手当（給付制限・受給期間・延長）",offset:35},
-  {id:"c27",subject:"koyou",name:"就職促進給付（再就職手当等）",offset:37},
-  {id:"c28",subject:"koyou",name:"教育訓練給付（一般・専門実践）",offset:38},
-  {id:"c29",subject:"koyou",name:"雇用継続給付（高年齢・介護休業）",offset:40},
-  {id:"c30",subject:"koyou",name:"育児休業給付（支給額・期間）",offset:41},
-  {id:"c31",subject:"koyou",name:"雇用保険二事業・不服申立・時効",offset:43},
-  {id:"c32",subject:"choshu",name:"保険関係の成立・消滅・一括有期事業",offset:44},
-  {id:"c33",subject:"choshu",name:"概算保険料・修正申告・延納",offset:45},
-  {id:"c34",subject:"choshu",name:"確定保険料・メリット制・追徴金",offset:46},
-  {id:"c35",subject:"choshu",name:"労働保険事務組合・印紙保険料",offset:47},
-  {id:"c36",subject:"choshu",name:"特別加入（種類・要件）",offset:48},
-  {id:"c37",subject:"choshu",name:"不服申立・時効・通則",offset:49},
-  {id:"c38",subject:"kenpo",name:"被保険者・適用事業所・任意継続",offset:50},
-  {id:"c39",subject:"kenpo",name:"標準報酬月額（定時決定・随時改定）",offset:51},
-  {id:"c40",subject:"kenpo",name:"保険料（率・労使負担・納付）",offset:53},
-  {id:"c41",subject:"kenpo",name:"療養給付・高額療養費",offset:54},
-  {id:"c42",subject:"kenpo",name:"傷病手当金（要件・額・通算）",offset:55},
-  {id:"c43",subject:"kenpo",name:"出産育児一時金・出産手当金・埋葬料",offset:56},
-  {id:"c44",subject:"kenpo",name:"被扶養者（認定・収入要件）",offset:57},
-  {id:"c45",subject:"kenpo",name:"審査請求・時効・通則",offset:59},
-  {id:"c46",subject:"kokunen",name:"被保険者（1・2・3号）・任意加入",offset:62},
-  {id:"c47",subject:"kokunen",name:"保険料（額・免除・猶予・前納・追納）",offset:63},
-  {id:"c48",subject:"kokunen",name:"老齢基礎年金（受給要件・年金額）",offset:65},
-  {id:"c49",subject:"kokunen",name:"老齢基礎年金（繰上げ・繰下げ）",offset:66},
-  {id:"c50",subject:"kokunen",name:"障害基礎年金（認定日・納付要件・額）",offset:68},
-  {id:"c51",subject:"kokunen",name:"遺族基礎年金（受給権者・子の定義）",offset:69},
-  {id:"c52",subject:"kokunen",name:"付加年金・寡婦年金・死亡一時金",offset:71},
-  {id:"c53",subject:"kokunen",name:"国民年金基金・時効・審査請求",offset:73},
-  {id:"c54",subject:"nenkin",name:"被保険者・適用事業所・高齢任意加入",offset:74},
-  {id:"c55",subject:"nenkin",name:"標準報酬月額・保険料（18.3%・労使折半）",offset:75},
-  {id:"c56",subject:"nenkin",name:"老齢厚生年金（特別支給・本来支給）",offset:77},
-  {id:"c57",subject:"nenkin",name:"在職老齢年金・繰上げ繰下げ",offset:79},
-  {id:"c58",subject:"nenkin",name:"障害厚生年金・障害手当金",offset:80},
-  {id:"c59",subject:"nenkin",name:"遺族厚生年金（受給権者・年齢要件）",offset:82},
-  {id:"c60",subject:"nenkin",name:"離婚時年金分割（合意・3号）",offset:83},
-  {id:"c61",subject:"nenkin",name:"経過措置・脱退一時金・時効",offset:85},
+  /* ══ 労働基準法（10論点） 3/29〜4/15 ══ */
+  {id:"c01",subject:"roudou",name:"労働契約・就業規則・労使協定の効力",offset:0},
+  {id:"c02",subject:"roudou",name:"労働時間の原則（法定・特例・みなし労働時間）",offset:2},
+  {id:"c03",subject:"roudou",name:"時間外・休日労働（36協定・特別条項・上限規制）",offset:4},
+  {id:"c04",subject:"roudou",name:"変形労働時間制（1ヶ月・1年・フレックス）",offset:6},
+  {id:"c05",subject:"roudou",name:"休憩・休日（付与義務・振替休日・代休）",offset:8},
+  {id:"c06",subject:"roudou",name:"年次有給休暇（付与・5日取得義務・比例付与）",offset:10},
+  {id:"c07",subject:"roudou",name:"賃金（5原則・平均賃金・割増賃金）",offset:12},
+  {id:"c08",subject:"roudou",name:"解雇・退職（予告・制限・打切補償）",offset:14},
+  {id:"c09",subject:"roudou",name:"年少者・妊産婦・育児時間・深夜業の保護",offset:16},
+  {id:"c10",subject:"roudou",name:"就業規則・制裁・労働基準監督署・罰則",offset:18},
+  /* ══ 労働安全衛生法（6論点） 4/17〜4/23 ══ */
+  {id:"c11",subject:"anzen",name:"安全衛生管理体制（統括・安全・衛生委員会・産業医）",offset:20},
+  {id:"c12",subject:"anzen",name:"健康診断（定期・雇入れ・特殊・記録保存・報告）",offset:21},
+  {id:"c13",subject:"anzen",name:"ストレスチェック制度・長時間労働者への面接指導",offset:22},
+  {id:"c14",subject:"anzen",name:"安全衛生教育（雇入れ時・特別教育・職長等）",offset:23},
+  {id:"c15",subject:"anzen",name:"特定化学物質・有機溶剤・粉じん・作業環境測定",offset:24},
+  {id:"c62",subject:"anzen",name:"機械等の危険防止規制・安全衛生改善計画・監督と罰則",offset:25},
+  /* ══ 労働者災害補償保険法（11論点） 4/25〜5/14 ══ */
+  {id:"c63",subject:"rousai",name:"労災保険の適用・暫定任意適用事業・適用労働者",offset:27},
+  {id:"c16",subject:"rousai",name:"業務災害・複数業務要因災害の認定基準",offset:29},
+  {id:"c64",subject:"rousai",name:"通勤及び通勤災害の認定基準（逸脱・中断）",offset:31},
+  {id:"c65",subject:"rousai",name:"給付基礎日額（算定・スライド・年齢別最高最低限度額）",offset:32},
+  {id:"c17",subject:"rousai",name:"療養（補償）給付・二次健康診断等給付",offset:34},
+  {id:"c18",subject:"rousai",name:"休業（補償）給付・傷病（補償）年金",offset:36},
+  {id:"c19",subject:"rousai",name:"障害（補償）給付（等級・年金・一時金・変更）",offset:38},
+  {id:"c20",subject:"rousai",name:"遺族（補償）給付・葬祭料（受給権者・額・失権）",offset:40},
+  {id:"c21",subject:"rousai",name:"介護（補償）給付・特別支給金・他の制度との調整",offset:42},
+  {id:"c22",subject:"rousai",name:"社会復帰促進等事業・特別加入制度",offset:44},
+  {id:"c23",subject:"rousai",name:"費用徴収・支給制限・不服申立・時効・通則",offset:46},
+  /* ══ 雇用保険法（9論点） 5/16〜6/1 ══ */
+  {id:"c24",subject:"koyou",name:"被保険者の種類・マルチジョブホルダー・適用事業所",offset:48},
+  {id:"c25",subject:"koyou",name:"基本手当（受給資格・賃金日額・基本手当日額）",offset:50},
+  {id:"c66",subject:"koyou",name:"基本手当（特定受給資格者・就職困難者・給付日数）",offset:52},
+  {id:"c26",subject:"koyou",name:"基本手当（給付制限・受給期間・延長）",offset:54},
+  {id:"c27",subject:"koyou",name:"就職促進給付（再就職手当・就業促進定着手当等）",offset:56},
+  {id:"c28",subject:"koyou",name:"教育訓練給付（一般・特定一般・専門実践）",offset:58},
+  {id:"c29",subject:"koyou",name:"雇用継続給付（高年齢雇用継続・介護休業給付）",offset:59},
+  {id:"c30",subject:"koyou",name:"育児休業給付（出生時・休業期間・支給額・延長）",offset:61},
+  {id:"c31",subject:"koyou",name:"雇用保険二事業・不服申立・時効",offset:63},
+  /* ══ 労働保険徴収法（6論点） 6/3〜6/10 ══ */
+  {id:"c32",subject:"choshu",name:"保険関係の成立・消滅・一括有期事業",offset:65},
+  {id:"c33",subject:"choshu",name:"概算保険料・修正申告・延納",offset:67},
+  {id:"c34",subject:"choshu",name:"確定保険料・メリット制・追徴金",offset:68},
+  {id:"c35",subject:"choshu",name:"労働保険事務組合・印紙保険料",offset:70},
+  {id:"c36",subject:"choshu",name:"特別加入（種類・要件・給付基礎日額）",offset:71},
+  {id:"c37",subject:"choshu",name:"不服申立・時効・通則",offset:72},
+  /* ══ 労働に関する一般常識（7論点） 6/11〜6/20 ★新設 ══ */
+  {id:"c67",subject:"roudouippan",name:"労働組合法（団結権・団体交渉・労働協約・不当労働行為）",offset:74},
+  {id:"c68",subject:"roudouippan",name:"労働関係調整法（あっせん・調停・仲裁・争議行為）",offset:75},
+  {id:"c69",subject:"roudouippan",name:"男女雇用機会均等法・育児介護休業法の主要規定",offset:77},
+  {id:"c70",subject:"roudouippan",name:"高年齢者雇用安定法・障害者雇用促進法",offset:79},
+  {id:"c71",subject:"roudouippan",name:"労働者派遣法・パートタイム・有期雇用労働法",offset:80},
+  {id:"c72",subject:"roudouippan",name:"最低賃金法・じん肺法・その他個別労働法規",offset:82},
+  {id:"c73",subject:"roudouippan",name:"社会保険労務士法・労働経済・労務管理の基礎",offset:83},
+  /* ══ 健康保険法（9論点） 6/23〜7/6 ══ */
+  {id:"c38",subject:"kenpo",name:"被保険者・適用事業所・任意継続被保険者",offset:86},
+  {id:"c39",subject:"kenpo",name:"標準報酬月額（定時決定・随時改定・産前産後休業）",offset:87},
+  {id:"c40",subject:"kenpo",name:"保険料（率・労使負担・納付・猶予・免除）",offset:89},
+  {id:"c41",subject:"kenpo",name:"療養給付・保険外併用療養費・高額療養費",offset:90},
+  {id:"c74",subject:"kenpo",name:"高額介護合算療養費・訪問看護療養費・移送費",offset:92},
+  {id:"c42",subject:"kenpo",name:"傷病手当金（要件・額・通算・他給付との調整）",offset:93},
+  {id:"c43",subject:"kenpo",name:"出産育児一時金・出産手当金・埋葬料",offset:95},
+  {id:"c44",subject:"kenpo",name:"被扶養者（認定・収入要件・手続）",offset:96},
+  {id:"c45",subject:"kenpo",name:"審査請求・時効・通則",offset:98},
+  /* ══ 厚生年金保険法（8論点） 7/7〜7/20 ══ */
+  {id:"c54",subject:"nenkin",name:"被保険者・適用事業所・高齢任意加入",offset:100},
+  {id:"c55",subject:"nenkin",name:"標準報酬月額・保険料（18.3%・労使折半・標準賞与）",offset:101},
+  {id:"c56",subject:"nenkin",name:"老齢厚生年金（特別支給・本来支給・加給年金）",offset:103},
+  {id:"c57",subject:"nenkin",name:"在職老齢年金（支給停止基準）・繰上げ・繰下げ",offset:104},
+  {id:"c58",subject:"nenkin",name:"障害厚生年金・障害手当金（要件・額・調整）",offset:106},
+  {id:"c59",subject:"nenkin",name:"遺族厚生年金（受給権者・転給・中高齢寡婦加算）",offset:107},
+  {id:"c60",subject:"nenkin",name:"離婚時年金分割（合意分割・3号分割）",offset:109},
+  {id:"c61",subject:"nenkin",name:"経過措置・脱退一時金・時効・審査請求",offset:110},
+  /* ══ 国民年金法（8論点） 7/18〜7/28 ══ */
+  {id:"c46",subject:"kokunen",name:"被保険者（1・235Ϸ）・任意加入・適用事業所",offset:111},
+  {id:"c47",subject:"kokunen",name:"保険料（額・免除・猶予・前納・追納）",offset:113},
+  {id:"c48",subject:"kokunen",name:"老齢基礎年金（受給要件・年金額・振替加算）",offset:115},
+  {id:"c49",subject:"kokunen",name:"老齢基礎年金（繰上げ・繰下げ）・付加年金",offset:116},
+  {id:"c50",subject:"kokunen",name:"障害基礎年金（認定日・納付要件・額・加算）",offset:117},
+  {id:"c51",subject:"kokunen",name:"遺族基礎年金（受給権者・子の定義・失権）",offset:118},
+  {id:"c52",subject:"kokunen",name:"寡婦年金・死亡一時金・国民年金基金",offset:119},
+  {id:"c53",subject:"kokunen",name:"時効・審査請求・給付の制限・通則",offset:120},
+  /* ══ 社会保険に関する一般常識（5論点） 7/27〜7/31 ★新設 ══ */
+  {id:"c75",subject:"shakaiippan",name:"社会保険の全体像・沿革・財政方式・給付の体系",offset:120},
+  {id:"c76",subject:"shakaiippan",name:"介護保険法（被保険者・要介護認定・保険給付の種類）",offset:121},
+  {id:"c77",subject:"shakaiippan",name:"高齢者の医療の確保に関する法律（後期高齢者医療）",offset:122},
+  {id:"c78",subject:"shakaiippan",name:"船員保険法・確定拠出年金法・その他社会保険法規",offset:123},
+  {id:"c79",subject:"shakaiippan",name:"社会保障の概念・年金財政・社会保険一般常識の総整理",offset:124},
 ];
 
 /* ── 状態 ── */
@@ -346,23 +433,30 @@ async function upsertCard(card){
 /* ── AI生成 ── */
 async function genQ(topic){
   const sub=SUBS[topic.subject]?.name||topic.subject;
-  const prompt=`あなたは社労士試験の本試験問題作成者です。「${sub}」の「${topic.name}」について、実際の本試験・過去問と同等レベルの難問を10問（正誤6問・穴埋め4問）作成してください。
+  const prompt=`あなたはTAC社労士講座のトレーニング問題集作成者です。「${sub}」の「${topic.name}」につう、トレーニング問題集と同じ形式・難易度で20問（○×問題14問・穴埋め6問）を作成してください。
 
-【必須条件】
-・問題文は本試験と同じ長さ・形式（条件・状況を詳細に記述）
-・以下のひっかけパターンを必ず使用：
-  ①「以上・超える・未満・以下」の混同
-  ②改正前後の数字（令和4年〜令和7年改正）
-  ③原則と例外・例外の例外
-  ④複数要件の「かつ」条件で一方だけ正しい
-  ⑤似た制度との混同（例：業務災害vs通勤災害、国年vs厚年）
-  ⑥「原則として」という表現を使った罠
-  ⑦数字の桁・単位の混同（日・月・年、円・万円）
-・解説は条文番号を明示し、なぜ誤りかを論理的に説明
-・受験生が自信を持って間違える問題にすること
+【TAC トレーニング問題集の特徴を厳守】
+・問題文は本試験択一式のように1肢ずつの正誤を問う形式
+・条件・例外・数字を盛り込んだ実務的な設定
+・問題は独立して完結している（前の問題に依存しない）
+・解説は【根拠条文】【正しい%��容】【ひっかけポイント】の3点を明記
 
-JSONのみ（バッククォート不要）：{"q":[{"type":"truefalse","q":"本試験レベルの詳細な問題文","a":"true","e":"【根拠】条文番号\n【解説】正確な解説\n【引っ掛け】なぜ間違えやすいか"},{"type":"fillin","q":"___を含む問題文","a":"答えの語句・数字","e":"【根拠】...\n【解説】...\n【引っ掛け】..."}]}`;
-  const SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Zm1oeGNvYXdlenl5cndscmx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY5MjMsImV4cCI6MjA5MDM3MjkyM30.jWDNon4jG_qYxY1Vvr6Kr9JkAg8zjCQbHDJhKGiNJ28';
+【必須ひっかけパターン（全て使用）】
+① 「以上/超える」「未満/以下」「前/後」の混同
+② 数値・期間の誤り（3日→4日、12ヶ月→6ヶ月 等）
+③ 原則と例外・例外の例外の逆転
+④ 「かつ」条件で一方だけ正しい記述
+⑤ 類似制度・隣接科目との混同（国年↔厚年、労災↔健保 等）
+⑥ 「できる/しなければならない」「任意/義務」の混同
+⑦ 適用除外・特例の見落とし
+⑧ 令和4〜7年改正の新旧混同
+
+【穴埋め問題の要件】
+・___には重要な数値・語句（法律の核心）を入れる
+・前後の文脈だけでは答えられない知識問題にする
+
+JSONのみ（コードブロック不要）：{"q":[{"type":"truefalse","q":"（本試験択一と同じ長さの問題文。条件を詳述）","a":"true","e":"【根拠】法XX条X項\n【解説】（正確な内容と誤りのポイント）\n【ひっかけ】（受験生が間違える理由）"},{"type":"fillin","q":"「___」の語句が入る問題文（前後の文章）","a":"答えの語句または数値","e":"【根拠】法XX条\n【解説】○○は___である。\n【ひっかけ】よく混同される○○との違い"}]}`;
+  const SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Zm1oeGNvYXdlenlyd2xydDEiLCJyb2xlcyI6ImFub24iLCJpYXQiOjE3NzQ3OTY5MjMsImV4cCI6MjA5MDM3MjkyM30.jWDNon4jG_qYxY1Vvr6Kr9JkAg8zjCQbHDJhKGiNJ28';
   const res=await fetch("https://owfmhxcoawezyyrwlrlt.supabase.co/functions/v1/generate",{
     method:"POST",
     headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPA_ANON,"apikey":SUPA_ANON},
@@ -394,7 +488,7 @@ function tStat(tid){
   const tried=tc.filter(c=>c.reps>0);
   const ok=tried.filter(c=>(c.lapses||0)/Math.max(c.reps,1)<0.3).length;
   const rate=tried.length>0?ok/tried.length:0;
-  return{count:tc.length,tried:tried.length,rate,done:tried.length>=10,mastered:tried.length>=10&&rate>=0.8};
+  return{count:tc.length,tried:tried.length,rate,done:tried.length>=20,mastered:tried.length>=20&&rate>=0.8};
 }
 function getCur(){
   const today=new Date();today.setHours(0,0,0,0);
@@ -410,9 +504,12 @@ function goScreen(n){['loading','main','question','answer','complete','apikey'].
 function switchTab(n){
   document.getElementById('tab-home').classList.toggle('hidden',n!=='home');
   document.getElementById('tab-schedule').classList.toggle('hidden',n!=='schedule');
+  document.getElementById('tab-import').classList.toggle('hidden',n!=='import');
   document.getElementById('tb-home').classList.toggle('active',n==='home');
   document.getElementById('tb-sched').classList.toggle('active',n==='schedule');
+  document.getElementById('tb-import').classList.toggle('active',n==='import');
   if(n==='schedule')renderSched();
+  if(n==='import')renderImportHistory();
 }
 function goHome(){goScreen('main');switchTab('home');renderHome();}
 
@@ -425,8 +522,8 @@ function renderHome(){
   const mastered=cur.filter(t=>t.status==="mastered").length;
   const done=cur.filter(t=>t.st.tried>0).length;
   const overdue=cur.filter(t=>t.overdue);
-  document.getElementById('prog-label').textContent=`${done}/61論点 (${Math.round(done/61*100)}%)`;
-  document.getElementById('prog-bar').style.width=`${mastered/61*100}%`;
+  document.getElementById('prog-label').textContent=`${done}/${CUR.length}論点 (${Math.round(done/CUR.length*100)}%)`;
+  document.getElementById('prog-bar').style.width=`${mastered/CUR.length*100}%`;
   document.getElementById('s-mastered').textContent=mastered;
   document.getElementById('s-due').textContent=due.length;
   document.getElementById('s-over').textContent=overdue.length;
@@ -460,7 +557,7 @@ function renderHome(){
   const upcoming=cur.filter(t=>{const d=(t.date-today)/86400000;return d>0&&d<=14;}).slice(0,10);
   const sec=document.getElementById('upcoming-sec');
   if(upcoming.length){
-    sec.innerHTML=`<div class="sec">今後14日間のスケジュール</div><div style="padding:0 16px">${upcoming.map(t=>{
+    sec.innerHTML<`<div class="sec">今後14日間のスケジュール</div><div style="padding:0 16px">${upcoming.map(t=>{
       const diff=Math.round((t.date-today)/86400000),s=SUBS[t.subject];
       return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0ec">
         <div style="width:30px;font-size:10px;font-weight:600;color:#888;text-align:center">${diff===1?"明日":"+"+diff+"日"}</div>
@@ -507,14 +604,14 @@ async function startTopic(topic){
   document.getElementById('focus-msg').textContent=`「${topic.name}」の問題を生成中...`;
   try{
     let existing=allCards.filter(c=>c.topic_id===topic.id);
-    if(existing.length<10){
+    if(existing.length<20){
       const newC=await genQ(topic);
       for(const c of newC)await upsertCard(c);
       allCards=[...allCards,...newC];
       existing=allCards.filter(c=>c.topic_id===topic.id);
     }
     const now=new Date();
-    const fresh=existing.filter(c=>!c.reps||c.reps===0).slice(0,10);
+    const fresh=existing.filter(c=>!c.reps||c.reps===0).slice(0,20);
     const topicDue=existing.filter(c=>c.reps>0&&new Date(c.due)<=now);
     const otherDue=allCards.filter(c=>c.topic_id!==topic.id&&new Date(c.due)<=now).slice(0,5);
     const q=[...fresh,...topicDue,...otherDue].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i);
@@ -591,6 +688,148 @@ function renderComplete(){
   const p=document.getElementById('cp-pct');p.textContent=pct+'%';p.style.color=pct>=70?"#0F6E56":pct>=50?"#185FA5":"#c0392b";
 }
 
+/* ══════════════════════════════════════════
+   PDF問題インポート機能
+   PDF.js でテキスト抽出 → Claude で解析 → Supabase保存
+   ══════════════════════════════════════════ */
+let importRunning=false;
+
+function renderImportHistory(){
+  const history=JSON.parse(localStorage.getItem('pdf_import_history')||'[]');
+  const el=document.getElementById('import-history-list');
+  if(!history.length){el.textContent='まだ取込みがありません';return;}
+  el.innerHTML=history.slice(-10).reverse().map(h=>
+    `<div style="padding:8px 0;border-bottom:1px solid #f0f0ec;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:13px;font-weight:500">${h.filename}</div><div style="font-size:11px;color:#aaa">${h.date} · ${h.count}問</div></div>
+      <div style="font-size:11px;color:#0F6E56;font-weight:600">${h.count}問</div>
+    </div>`
+  ).join('');
+}
+
+async function handlePDFSelect(event){
+  const file=event.target.files[0];
+  if(!file||importRunning)return;
+  if(!getApiKey()){alert('先にAPIキーを設定してください');return;}
+
+  importRunning=true;
+  document.getElementById('import-progress').classList.remove('hidden');
+  document.getElementById('import-result').classList.add('hidden');
+  document.getElementById('import-status').textContent=`"${file.name}" を解析中...`;
+  document.getElementById('import-detail').textContent='テキストを抽出しています...';
+  document.getElementById('import-bar').style.width='5%';
+  document.getElementById('import-count').textContent='準備中';
+
+  try{
+    // ── Step1: PDF.js でテキスト抽出 ──
+    const arrayBuffer=await file.arrayBuffer();
+    const pdfDoc=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    const totalPages=pdfDoc.numPages;
+    document.getElementById('import-detail').textContent=`全${totalPages}ハージを抽去識中...`;
+
+    let pages=[];
+    for(let i=1;i<=totalPages;i++){
+      const page=await pdfDoc.getPage(i);
+      const tc=await page.getTextContent();
+      const pageText=tc.items.map(x=>x.hasEOL&&x.str===''?x'\n':x.hasEOL?x.str+'\n':x.str).join('').trim();
+      if(pageText.length>30)pages.push({page:i,text:pageText});
+      document.getElementById('import-bar').style.width=`${Math.round(5+(i/totalPages)*25)}%`;
+    }
+    document.getElementById('import-detail').textContent=`${pages.length}ページのテキストを取得、問題を解析中...`;
+
+    // ── Step2: ページをまとゆClaudeで解析（チャンク処理） ──
+    const CHUNK=6; // 6ページせつ
+    let allCards=[];
+    const topicRef=CUR.map(t=>`${t.id}:${t.name}(${t.subject})`).join('\n');
+
+    for(let i=0;i<pages.length;i+=CHUNK){
+      const chunk=pages.slice(i,i+CHUNK);
+      const chunkText=chunk.map(p=>`[p${p.page}]\n${p.text}`).join('\n\n');
+      const progress=Math.round(30+(i/pages.length)*60);
+      document.getElementById('import-bar').style.width=`${progress}%`;
+      document.getElementById('import-status').textContent=`p${chunk[0].page}~${chunk[chunk.length-1].page} を解析中...`;
+      document.getElementById('import-count').textContent=`${allCards.length}問 取込済`;
+
+      const prompt=`あなたは社労士試験のエキスパー〈です。以下のPDFテキストから問題を全て抽出してください。
+
+【論点リスト（topic_idの選択肢）】
+${topicRef}
+
+【抽出ルール】
+・問題文・答え・解説を必ず抽出する
+・○×問題はtype:"truefalse"、穴埋めはtype:"fillin"とする
+・解説がない場合はtopic_idの名称から推測して作成する
+・問題が複数ある場合は全て抽出する（見落とし厳禁）
+・問題でない説明文・タイトル・ページ番号は無視する
+・answer は truefalse の場合 "true" or "false"、fillin の場合は答えの語句
+
+【出力形式】
+SONのみ（コードブロック不要）:
+{"questions":[{"topic_id":"c16","subject":"rousai","topic":"業務災害の認定基準","type":"truefalse","question":"問題文全文","answer":"true","explanation":"解説枇"},...]}\n\n【PDFテキスト】\n${chunkText}`;
+
+      try{
+        const res=await fetch("https://owfmhxcoawezyyrwlrlt.supabase.co/functions/v1/generate",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPA_KEY,"apikey":SUPA_KEY},
+          body:JSON.stringify({prompt,apiKey:getApiKey()})
+        });
+        if(!res.ok)continue;
+        const d=await res.json();
+        const txt=(d.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
+        if(!txt)continue;
+        let parsed;
+        try{parsed=JSON.parse(txt);}catch{const m=txt.match(/\{[\s\S]*\}/);if(m)try{parsed=JSON.parse(m[0]);}catch{continue;}else continue;}
+        const qs=(parsed.questions||[]).filter(q=>q.question&&q.answer&&q.topic_id);
+        for(const q of qs){
+          const card={
+            id:`import_${q.topic_id}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+            topic_id:q.topic_id,subject:q.subject||'',topic:q.topic||'',
+            type:q.type||'truefalse',question:q.question,answer:String(q.answer),
+            explanation:q.explanation||'',
+            state:0,stability:0,difficulty:0,due:new Date().toISOString(),
+            last_review:null,reps:0,lapses:0,scheduled_days:0
+          };
+          allCards.push(card);
+        }
+      }catch(e){console.warn('chunk parse error:',e);}
+
+      await new Promise(r=>setTimeout(r,800)); // rate limit
+    }
+
+    // ── Step3: Supabaseに一括保存 ──
+    document.getElementById('import-status').textContent='Supabaseに保存中...';
+    document.getElementById('import-bar').style.width='92%';
+    let saved=0;
+    for(const card of allCards){
+      await upsertCard(card);
+      saved++;
+      if(saved%5===0){
+        document.getElementById('import-count').textContent=`${saved}/${allCards.length}問 保存済`;
+      }
+    }
+    // ── 履歴保存 ──
+    const history=JSON.parse(localStorage.getItem('pdf_import_history')||'[]');
+    history.push({filename:file.name,date:new Date().toLocaleDateString('ja'),count:allCards.length});
+    localStorage.setItem('pdf_import_history',JSON.stringify(history));
+
+    document.getElementById('import-bar').style.width='100%';
+    document.getElementById('import-progress').classList.add('hidden');
+    document.getElementById('import-result').classList.remove('hidden');
+    document.getElementById('import-result-msg').textContent=`${allCards.length}問をインポートしました。次回から練習に出題されます。`;
+    renderImportHistory();
+
+    // グローバルallCardsを再読込
+    try{const d2=await loadCards();window.allCards=d2;}catch(e){}
+
+  }catch(e){
+    console.error('PDF import error:',e);
+    document.getElementById('import-status').textContent='エラーが発生しました';
+    document.getElementById('import-detail').textContent=e.message||'不明なエラー';
+  }finally{
+    importRunning=false;
+    document.getElementById('pdf-file-input').value='';
+  }
+}
+
 /* ── イベント ── */
 document.getElementById('fc-btn').addEventListener('click',()=>{if(focusTopic&&!busy)startTopic(focusTopic);});
 document.getElementById('review-btn').addEventListener('click',startReview);
@@ -606,7 +845,7 @@ document.getElementById('reset-btn').addEventListener('click',async()=>{
 function getApiKey(){return localStorage.getItem('anthropic_api_key')||'';}
 function saveApiKey(){
   const k=document.getElementById('apikey-input').value.trim();
-  if(!k.startsWith('sk-ant-')){document.getElementById('apikey-err').textContent='正しいAPIキーを入力してください（sk-ant-で始まります）';return;}
+  if(!k.startsWith('sk-ant-')){document.getElementById('apikey-err').textContent='正しいAPIキーを入力してください（sk-ant-で始み���す）';return;}
   localStorage.setItem('anthropic_api_key',k);
   init();
 }
