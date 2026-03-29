@@ -346,10 +346,10 @@ async function upsertCard(card){
 /* ── AI生成 ── */
 async function genQ(topic){
   const sub=SUBS[topic.subject]?.name||topic.subject;
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json","x-api-key":getApiKey(),"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2500,
-      messages:[{role:"user",content:`社労士試験「${sub}」の「${topic.name}」について本試験レベルの問題を5問（正誤3問・穴埋め2問）作成。以下のひっかけを盛り込む：①以上/超える/未満/以下の混同 ②改正前後の数字 ③原則と例外 ④複数要件の一方だけ正しい ⑤似た制度の混同。JSONのみ（バッククォート不要）：{"q":[{"type":"truefalse","q":"問題文","a":"true","e":"【根拠】条文番号\\n【解説】解説\\n【引っ掛け】ポイント"},{"type":"fillin","q":"___含む問題文","a":"答え","e":"..."}]}`}]})
+  const prompt=`社労士試験「${sub}」の「${topic.name}」について本試験レベルの問題を5問（正誤3問・穴埋め2問）作成。以下のひっかけを盛り込む：①以上/超える/未満/以下の混同 ②改正前後の数字 ③原則と例外 ④複数要件の一方だけ正しい ⑤似た制度の混同。JSONのみ（バッククォート不要）：{"q":[{"type":"truefalse","q":"問題文","a":"true","e":"【根拠】条文番号\n【解説】解説\n【引っ掛け】ポイント"},{"type":"fillin","q":"___含む問題文","a":"答え","e":"..."}]}`;
+  const res=await fetch("https://owfmhxcoawezyyrwlrlt.supabase.co/functions/v1/generate",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({prompt,apiKey:getApiKey()})
   });
   if(!res.ok)throw new Error('HTTP '+res.status);
   const d=await res.json();
