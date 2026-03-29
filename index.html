@@ -586,12 +586,13 @@ function saveApiKey(){
   init();
 }
 /* ── 初期化 ── */
-(async()=>{
+async function init(){
   if(!getApiKey()){goScreen('apikey');return;}
   try{allCards=await loadCards();}catch(e){console.error(e);allCards=[];}
   renderHome();
   goScreen('main');
-})();
+}
+init();
 </script>
 </body>
 </html>
