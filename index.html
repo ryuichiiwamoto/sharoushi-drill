@@ -351,10 +351,18 @@ async function genQ(topic){
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({prompt,apiKey:getApiKey()})
   });
-  if(!res.ok)throw new Error('HTTP '+res.status);
+  if(!res.ok){const e=await res.text();throw new Error('HTTP '+res.status+': '+e);}
   const d=await res.json();
+  if(d.error){throw new Error('API error: '+JSON.stringify(d.error));}
   const txt=(d.content?.[0]?.text||"").replace(/```json|```/g,"").trim();
-  return JSON.parse(txt).q.map((q,i)=>({
+  if(!txt){throw new Error('Empty response from API. Check your API key.');}
+  let parsed;
+  try{parsed=JSON.parse(txt);}catch(e){
+    // JSONの前後にゴミがある場合はマッチで抽出
+    const m=txt.match(/\{[\s\S]*\}/);
+    if(m)parsed=JSON.parse(m[0]);else throw new Error('JSON parse failed: '+txt.slice(0,100));
+  }
+  return (parsed.q||[]).map((q,i)=>({
     id:`${topic.id}_${Date.now()}_${i}`,topic_id:topic.id,subject:topic.subject,topic:topic.name,
     type:q.type,question:q.q,answer:String(q.a),explanation:q.e||"",
     state:0,stability:0,difficulty:0,due:new Date().toISOString(),
