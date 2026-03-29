@@ -44,7 +44,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP"
 </head>
 <body>
 <div id="app">
-  <div id="screen-loading" style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px">
+  
+<div id="screen-apikey" class="hidden" style="padding:40px 20px;text-align:center">
+  <div style="font-size:40px;margin-bottom:16px">🔑</div>
+  <div style="font-size:20px;font-weight:700;margin-bottom:8px">APIキーを設定</div>
+  <div style="font-size:13px;color:#888;margin-bottom:24px;line-height:1.7">
+    Anthropic APIキーを入力してください。<br>キーはこのデバイスにのみ保存されます。<br>
+    <a href="https://console.anthropic.com" target="_blank" style="color:#0F6E56">console.anthropic.com</a> で取得できます。
+  </div>
+  <input id="apikey-input" type="password" placeholder="sk-ant-..." 
+    style="width:100%;padding:14px;font-size:14px;border:2px solid #ddd;border-radius:12px;font-family:inherit;outline:none;margin-bottom:12px;box-sizing:border-box">
+  <button onclick="saveApiKey()" class="btn btn-primary" style="margin:0;width:100%">保存して開始</button>
+  <div id="apikey-err" style="color:#c0392b;font-size:12px;margin-top:8px"></div>
+</div>
+<div id="screen-loading" style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px">
     <div class="spinner" style="width:36px;height:36px;border-width:4px"></div>
     <div style="font-size:14px;color:#888">データを読み込み中...</div>
   </div>
@@ -117,6 +130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP"
 
       <div id="upcoming-sec" style="margin-top:8px"></div>
       <button class="btn btn-ghost" id="reset-btn" style="margin-top:16px;font-size:12px;padding:10px">データリセット</button>
+<button class="btn btn-ghost" onclick="localStorage.removeItem('anthropic_api_key');location.reload();" style="font-size:12px;padding:10px">APIキーを変更</button>
     </div>
 
     <div id="tab-schedule" class="hidden">
@@ -333,7 +347,7 @@ async function upsertCard(card){
 async function genQ(topic){
   const sub=SUBS[topic.subject]?.name||topic.subject;
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+    method:"POST",headers:{"Content-Type":"application/json","x-api-key":getApiKey(),"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2500,
       messages:[{role:"user",content:`社労士試験「${sub}」の「${topic.name}」について本試験レベルの問題を5問（正誤3問・穴埋め2問）作成。以下のひっかけを盛り込む：①以上/超える/未満/以下の混同 ②改正前後の数字 ③原則と例外 ④複数要件の一方だけ正しい ⑤似た制度の混同。JSONのみ（バッククォート不要）：{"q":[{"type":"truefalse","q":"問題文","a":"true","e":"【根拠】条文番号\\n【解説】解説\\n【引っ掛け】ポイント"},{"type":"fillin","q":"___含む問題文","a":"答え","e":"..."}]}`}]})
   });
@@ -367,7 +381,7 @@ function getCur(){
 }
 
 /* ── 画面切り替え ── */
-function goScreen(n){['loading','main','question','answer','complete'].forEach(s=>document.getElementById('screen-'+s).classList.toggle('hidden',s!==n));}
+function goScreen(n){['loading','main','question','answer','complete','apikey'].forEach(s=>document.getElementById('screen-'+s).classList.toggle('hidden',s!==n));}
 function switchTab(n){
   document.getElementById('tab-home').classList.toggle('hidden',n!=='home');
   document.getElementById('tab-schedule').classList.toggle('hidden',n!=='schedule');
@@ -563,8 +577,17 @@ document.getElementById('reset-btn').addEventListener('click',async()=>{
   allCards=[];renderHome();
 });
 
+
+function getApiKey(){return localStorage.getItem('anthropic_api_key')||'';}
+function saveApiKey(){
+  const k=document.getElementById('apikey-input').value.trim();
+  if(!k.startsWith('sk-ant-')){document.getElementById('apikey-err').textContent='正しいAPIキーを入力してください（sk-ant-で始まります）';return;}
+  localStorage.setItem('anthropic_api_key',k);
+  init();
+}
 /* ── 初期化 ── */
 (async()=>{
+  if(!getApiKey()){goScreen('apikey');return;}
   try{allCards=await loadCards();}catch(e){console.error(e);allCards=[];}
   renderHome();
   goScreen('main');
