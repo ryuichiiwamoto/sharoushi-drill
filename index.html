@@ -346,7 +346,22 @@ async function upsertCard(card){
 /* ── AI生成 ── */
 async function genQ(topic){
   const sub=SUBS[topic.subject]?.name||topic.subject;
-  const prompt=`社労士試験「${sub}」の「${topic.name}」について本試験レベルの問題を5問（正誤3問・穴埋め2問）作成。以下のひっかけを盛り込む：①以上/超える/未満/以下の混同 ②改正前後の数字 ③原則と例外 ④複数要件の一方だけ正しい ⑤似た制度の混同。JSONのみ（バッククォート不要）：{"q":[{"type":"truefalse","q":"問題文","a":"true","e":"【根拠】条文番号\n【解説】解説\n【引っ掛け】ポイント"},{"type":"fillin","q":"___含む問題文","a":"答え","e":"..."}]}`;
+  const prompt=`あなたは社労士試験の本試験問題作成者です。「${sub}」の「${topic.name}」について、実際の本試験・過去問と同等レベルの難問を10問（正誤6問・穴埋め4問）作成してください。
+
+【必須条件】
+・問題文は本試験と同じ長さ・形式（条件・状況を詳細に記述）
+・以下のひっかけパターンを必ず使用：
+  ①「以上・超える・未満・以下」の混同
+  ②改正前後の数字（令和4年〜令和7年改正）
+  ③原則と例外・例外の例外
+  ④複数要件の「かつ」条件で一方だけ正しい
+  ⑤似た制度との混同（例：業務災害vs通勤災害、国年vs厚年）
+  ⑥「原則として」という表現を使った罠
+  ⑦数字の桁・単位の混同（日・月・年、円・万円）
+・解説は条文番号を明示し、なぜ誤りかを論理的に説明
+・受験生が自信を持って間違える問題にすること
+
+JSONのみ（バッククォート不要）：{"q":[{"type":"truefalse","q":"本試験レベルの詳細な問題文","a":"true","e":"【根拠】条文番号\n【解説】正確な解説\n【引っ掛け】なぜ間違えやすいか"},{"type":"fillin","q":"___を含む問題文","a":"答えの語句・数字","e":"【根拠】...\n【解説】...\n【引っ掛け】..."}]}`;
   const SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Zm1oeGNvYXdlenl5cndscmx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY5MjMsImV4cCI6MjA5MDM3MjkyM30.jWDNon4jG_qYxY1Vvr6Kr9JkAg8zjCQbHDJhKGiNJ28';
   const res=await fetch("https://owfmhxcoawezyyrwlrlt.supabase.co/functions/v1/generate",{
     method:"POST",
@@ -379,7 +394,7 @@ function tStat(tid){
   const tried=tc.filter(c=>c.reps>0);
   const ok=tried.filter(c=>(c.lapses||0)/Math.max(c.reps,1)<0.3).length;
   const rate=tried.length>0?ok/tried.length:0;
-  return{count:tc.length,tried:tried.length,rate,done:tried.length>=5,mastered:tried.length>=5&&rate>=0.7};
+  return{count:tc.length,tried:tried.length,rate,done:tried.length>=10,mastered:tried.length>=10&&rate>=0.8};
 }
 function getCur(){
   const today=new Date();today.setHours(0,0,0,0);
@@ -492,14 +507,14 @@ async function startTopic(topic){
   document.getElementById('focus-msg').textContent=`「${topic.name}」の問題を生成中...`;
   try{
     let existing=allCards.filter(c=>c.topic_id===topic.id);
-    if(existing.length<5){
+    if(existing.length<10){
       const newC=await genQ(topic);
       for(const c of newC)await upsertCard(c);
       allCards=[...allCards,...newC];
       existing=allCards.filter(c=>c.topic_id===topic.id);
     }
     const now=new Date();
-    const fresh=existing.filter(c=>!c.reps||c.reps===0);
+    const fresh=existing.filter(c=>!c.reps||c.reps===0).slice(0,10);
     const topicDue=existing.filter(c=>c.reps>0&&new Date(c.due)<=now);
     const otherDue=allCards.filter(c=>c.topic_id!==topic.id&&new Date(c.due)<=now).slice(0,5);
     const q=[...fresh,...topicDue,...otherDue].filter((c,i,a)=>a.findIndex(x=>x.id===c.id)===i);
